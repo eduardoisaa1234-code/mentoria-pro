@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mentoria Pro — Agenda + CRM (WA pronto)</title>
+<meta name="description" content="Agenda de mentoria com CRM, WhatsApp 1‑clique, lembretes, links de pagamento e dashboard.">
+<style>
+  :root{
+    /* Luxo + Responsabilidade */
+    --bg:#0a0b0f;
+    --panel:#101218;
+    --card:#0e1118;
+    --text:#f1f1f4;
+    --muted:#a9abb6;
+    --border:#232730;
+    --accent:#cfad3c;    /* dourado */
+    --accent-2:#2d3b59;  /* confiança */
+    --ok:#2dbf6e;
+    --warn:#f0a500;
+    --danger:#ef4444;
+    --focus:#3b82f6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Helvetica Neue',Arial;
+    background:radial-gradient(1200px 600px at -20% -40%, #11162a 0%, transparent 60%), linear-gradient(180deg,#0a0c12,#090b10 60%, #080a0e);
+    color:var(--text)}
+  header{padding:16px 20px;background:rgba(0,0,0,.35);border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  header h1{font-size:18px;margin:0;font-weight:900;letter-spacing:.3px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .badge{background:var(--accent);color:#121212;padding:2px 10px;border-radius:999px;font-weight:900;font-size:12px}
+  nav{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+  nav button{background:#10131c;border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:800}
+  nav button.active{outline:2px solid var(--accent)}
+  main{padding:20px;max-width:1280px;margin:0 auto}
+  .grid{display:grid;gap:16px}
+  @media(min-width:900px){ .grid.cols-3{grid-template-columns: 1.2fr .8fr .8fr} .grid.cols-2{grid-template-columns: 1.1fr .9fr} }
+  .card{background: radial-gradient(1000px 500px at -15% -30%, #111524 0%, transparent 60%), var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+  .card h2{margin:0 0 10px 0;font-size:16px}
+  .muted{color:var(--muted)}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  input, select, textarea{background:#10131c;border:1px solid var(--border);color:var(--text);padding:10px;border-radius:10px;width:100%}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--focus);border-color:transparent}
+  label{font-size:12px;color:var(--muted)}
+  .btn{background:#141827;border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:800}
+  .btn.primary{background:var(--accent);color:#121212;border:none}
+  .btn.ok{background:var(--ok);color:#0b0b0b;border:none}
+  .btn.warn{background:var(--warn);color:#0b0b0b;border:none}
+  .btn.danger{background:var(--danger);color:#0b0b0b;border:none}
+  .btn.wa{display:inline-flex;align-items:center;gap:6px;background:#1f2a1f;border:1px solid #224422}
+  .btn.wa strong{color:#25D366}
+  .calendar .head{display:grid;grid-template-columns: repeat(7,1fr);text-align:center;color:var(--muted);font-weight:800;margin-bottom:6px}
+  .calendar .grid{display:grid;grid-template-columns: repeat(7,1fr);gap:8px}
+  .day{min-height:96px;border:1px dashed var(--border);border-radius:10px;padding:8px;position:relative}
+  .day .date{font-size:12px;color:var(--muted)}
+  .day .slot{margin-top:6px;background:#12162a;border:1px solid var(--border);padding:6px;border-radius:8px;font-size:12px;cursor:pointer}
+  .day.today{outline:2px solid var(--accent)}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:10px;flex-wrap:wrap}
+  .toolbar .title{font-weight:900;font-size:18px}
+  table{width:100%;border-collapse:collapse}
+  th, td{border-bottom:1px solid var(--border);padding:10px;text-align:left;font-size:14px;vertical-align:middle}
+  .stage{padding:2px 8px;border-radius:999px;font-weight:800;font-size:12px;border:1px solid var(--border)}
+  .Novo{background:#0e2a4d}
+  .Conversa{background:#1b3a60}
+  .Proposta{background:#2a4f7a}
+  .Fechado{background:#163525}
+  canvas{background:#0f1118;border:1px solid var(--border);border-radius:12px;padding:10px}
+  .hint{font-size:12px;color:var(--muted)}
+  .footer{text-align:center;color:var(--muted);padding:16px;border-top:1px solid var(--border);margin-top:30px}
+  .pill{display:inline-block;padding:6px 10px;border:1px solid var(--border);border-radius:999px;color:var(--muted);font-size:12px}
+  .spacer{flex:1}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>Mentoria Pro — Agenda + CRM</h1>
+    <span class="badge">Eduardo Conceição</span>
+  </div>
+  <nav>
+    <button id="tab-agenda" class="active">Agenda</button>
+    <button id="tab-crm">CRM</button>
+    <button id="tab-dashboard">Dashboard</button>
+    <button id="tab-config">Configurar</button>
+  </nav>
+</header>
+
+<main>
+  <!-- AGENDA -->
+  <section id="view-agenda">
+    <div class="toolbar">
+      <div class="row">
+        <button class="btn" id="prevMonth">◀</button>
+        <div class="title" id="monthTitle">Mês</div>
+        <button class="btn" id="nextMonth">▶</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="todayBtn">Hoje</button>
+        <button class="btn primary" id="newApptBtn">+ Novo Agendamento</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="calendar">
+        <div class="head">
+          <div>Dom</div><div>Seg</div><div>Ter</div><div>Qua</div><div>Qui</div><div>Sex</div><div>Sáb</div>
+        </div>
+        <div class="grid" id="calendarGrid"></div>
+      </div>
+      <p class="hint">Dica: dê duplo clique em um dia para criar um agendamento rápido.</p>
+    </div>
+  </section>
+
+  <!-- CRM -->
+  <section id="view-crm" style="display:none">
+    <div class="toolbar">
+      <div class="title">Leads & Vendas</div>
+      <div class="row">
+        <span class="pill">Mensagens WA prontas (estágio, pagamento, lembretes)</span>
+        <button class="btn primary" id="newLeadBtn">+ Novo Lead</button>
+      </div>
+    </div>
+    <div class="card">
+      <table id="leadsTable">
+        <thead>
+          <tr>
+            <th>Nome</th><th>WhatsApp</th><th>Ticket (R$)</th><th>Estágio</th><th>Pagamento</th><th>Última ação</th><th>Ações</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <p class="hint">Evite duplicidade: se cadastrar um lead com o mesmo WhatsApp, o sistema alerta.</p>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="view-dashboard" style="display:none">
+    <div class="grid cols-3">
+      <div class="card">
+        <h2>Sessões por Semana</h2>
+        <canvas id="chartWeekly" width="400" height="220"></canvas>
+      </div>
+      <div class="card">
+        <h2>Funil de Vendas</h2>
+        <canvas id="chartFunnel" width="400" height="220"></canvas>
+      </div>
+      <div class="card">
+        <h2>Métricas & Exportações</h2>
+        <div class="row">
+          <div class="card" style="flex:1">
+            <h2>Conversão (%)</h2>
+            <div id="kpiConv" style="font-size:32px;font-weight:900">0%</div>
+          </div>
+          <div class="card" style="flex:1">
+            <h2>Receita (R$)</h2>
+            <div id="kpiRev" style="font-size:32px;font-weight:900">0</div>
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <button class="btn" id="exportCSVLeads">Exportar Leads (CSV)</button>
+          <button class="btn" id="exportCSVAppts">Exportar Agendamentos (CSV)</button>
+          <span class="spacer"></span>
+          <button class="btn" id="backupJSON">Backup Total (JSON)</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONFIG -->
+  <section id="view-config" style="display:none">
+    <div class="grid cols-2">
+      <div class="card">
+        <h2>Preferências</h2>
+        <div class="row">
+          <div style="flex:1">
+            <label>Horário padrão (início)</label>
+            <input id="prefStart" type="time" value="09:00">
+          </div>
+          <div style="flex:1">
+            <label>Horário padrão (fim)</label>
+            <input id="prefEnd" type="time" value="18:00">
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div style="flex:1">
+            <label>DDI WhatsApp (padrão Brasil 55)</label>
+            <input id="prefDDI" type="number" value="55">
+          </div>
+          <div style="flex:1">
+            <label>Nome da marca</label>
+            <input id="prefBrand" placeholder="Ex.: Eduardo Conceição — Mentoria" value="Eduardo Conceição — Mentoria">
+          </div>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div style="flex:1">
+            <label>Link base de pagamento (opcional)</label>
+            <input id="prefPayBase" placeholder="ex.: https://seupagamento.com/pagar?ref=">
+          </div>
+          <div style="flex:1">
+            <label>Prefixo da referência (para gerar link)</label>
+            <input id="prefRefPrefix" placeholder="ex.: MENTORIA-">
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn ok" id="savePrefs">Salvar Preferências</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Mensagens WhatsApp (templates)</h2>
+        <p class="hint">Use as chaves: {nome}, {ticket}, {data}, {hora}, {tema}, {brand}, {pagamento}</p>
+        <div class="row">
+          <div style="flex:1">
+            <label>Estágio: Novo</label>
+            <textarea id="tplNovo" rows="3">Olá {nome}! Aqui é o Eduardo, da {brand}. Vi seu interesse na mentoria e quero entender seu momento para te ajudar com clareza. Podemos falar rapidinho hoje?</textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Estágio: Conversa</label>
+            <textarea id="tplConversa" rows="3">Valeu pelo papo, {nome}! Posso te mandar um resumo com o próximo passo e um horário para avançarmos?</textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Estágio: Proposta</label>
+            <textarea id="tplProposta" rows="3">Enviei a proposta no valor de {ticket}. Quer ajustar algum ponto? Posso reservar seu horário ainda esta semana.</textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Estágio: Fechado</label>
+            <textarea id="tplFechado" rows="3">Bem-vindo(a), {nome}! 🎉 Aqui está o onboarding e os horários disponíveis para a primeira sessão. Qual prefere?</textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Confirmação de Agendamento</label>
+            <textarea id="tplConfirm" rows="3">Olá {nome}! ✅ Sua mentoria está confirmada para {data} às {hora}. Tema: {tema}. Se precisar reagendar, me avise por aqui. Abraço, {brand}.</textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Lembrete 24h</label>
+            <textarea id="tplRem24" rows="3">Oi {nome}! Passando para lembrar da nossa mentoria amanhã, {data} às {hora}. Qualquer imprevisto, me avise. Até lá! ✨</textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Lembrete 2h</label>
+            <textarea id="tplRem2" rows="3">Oi {nome}! Faltam 2h para nossa mentoria hoje, {data} às {hora}. Te espero no horário combinado. 🚀</textarea>
+          </div>
+        </div>
+        <div class="row">
+          <div style="flex:1">
+            <label>Solicitar Pagamento</label>
+            <textarea id="tplPay" rows="3">Olá {nome}! Para garantir seu horário, segue o link de pagamento: {pagamento}. Assim que concluir, me avise por favor. 🙏</textarea>
+          </div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="btn ok" id="saveTpls">Salvar Templates</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <h2>Importar / Exportar</h2>
+      <div class="row">
+        <button class="btn" id="exportBtn">Exportar JSON</button>
+        <input type="file" id="importFile" accept=".json">
+        <button class="btn" id="importBtn">Importar JSON</button>
+      </div>
+      <p class="hint">Backup total inclui agendamentos, leads, preferências e templates.</p>
+    </div>
+  </section>
+
+  <div class="footer">Pronto para uso — Tudo salvo localmente (localStorage). Exporte backups quando quiser.</div>
+</main>
+
+<!-- Modal -->
+<div id="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.65); align-items:center; justify-content:center; padding:20px">
+  <div class="card" style="max-width:620px;width:100%;position:relative">
+    <div id="modalBody"></div>
+    <div class="row" style="margin-top:12px; justify-content:space-between">
+      <div id="modalLeftActions"></div>
+      <div>
+        <button class="btn" id="closeModal">Fechar</button>
+        <button class="btn ok" id="saveModal">Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== Storage & Schema =====
+const store = {
+  key: 'mentoria_pro_v1',
+  read(){
+    try{
+      return JSON.parse(localStorage.getItem(this.key)) || {
+        appts:[], leads:[],
+        prefs:{start:'09:00', end:'18:00', ddi:'55', brand:'Eduardo Conceição — Mentoria', payBase:'', refPrefix:''},
+        tpls:{
+          Novo:'Olá {nome}! Aqui é o Eduardo, da {brand}. Vi seu interesse na mentoria e quero entender seu momento para te ajudar com clareza. Podemos falar rapidinho hoje?',
+          Conversa:'Valeu pelo papo, {nome}! Posso te mandar um resumo com o próximo passo e um horário para avançarmos?',
+          Proposta:'Enviei a proposta no valor de {ticket}. Quer ajustar algum ponto? Posso reservar seu horário ainda esta semana.',
+          Fechado:'Bem-vindo(a), {nome}! 🎉 Aqui está o onboarding e os horários disponíveis para a primeira sessão. Qual prefere?',
+          Confirm:'Olá {nome}! ✅ Sua mentoria está confirmada para {data} às {hora}. Tema: {tema}. Se precisar reagendar, me avise por aqui. Abraço, {brand}.',
+          Rem24:'Oi {nome}! Passando para lembrar da nossa mentoria amanhã, {data} às {hora}. Qualquer imprevisto, me avise. Até lá! ✨',
+          Rem2:'Oi {nome}! Faltam 2h para nossa mentoria hoje, {data} às {hora}. Te espero no horário combinado. 🚀',
+          Pay:'Olá {nome}! Para garantir seu horário, segue o link de pagamento: {pagamento}. Assim que concluir, me avise por favor. 🙏'
+        }
+      };
+    }catch(e){
+      return {appts:[], leads:[], prefs:{start:'09:00', end:'18:00', ddi:'55', brand:'Mentoria', payBase:'', refPrefix:''}, tpls:{}}
+    }
+  },
+  write(data){ localStorage.setItem(this.key, JSON.stringify(data)); },
+  reset(){ localStorage.removeItem(this.key); }
+};
+let data = store.read();
+
+// ===== Utils =====
+function uuid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+function onlyDigits(s){ return (''+(s||'')).replace(/\D/g,''); }
+function sanitizePhone(raw){
+  let digits = onlyDigits(raw);
+  digits = digits.replace(/^0+/,'');
+  if(!digits.startsWith(data.prefs?.ddi||'55')) digits = (data.prefs?.ddi||'55') + digits;
+  return digits;
+}
+function fmtBRL(n){ return (n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}) }
+function fmtDate(d){ const dt=new Date(d); return dt.toLocaleDateString('pt-BR'); }
+function fmtTime(d){ const dt=new Date(d); return dt.toTimeString().slice(0,5); }
+function toLocalInput(iso){ if(!iso) return ''; const d=new Date(iso); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,16); }
+function fromLocalInput(val){ if(!val) return new Date().toISOString(); const d=new Date(val); d.setMinutes(d.getMinutes()+d.getTimezoneOffset()); return d.toISOString(); }
+function startOfMonth(date){ const d=new Date(date); d.setDate(1); d.setHours(0,0,0,0); return d; }
+function endOfMonth(date){ const d=new Date(date); d.setMonth(d.getMonth()+1); d.setDate(0); d.setHours(23,59,59,999); return d; }
+function startOfWeek(date){ const d=new Date(date); const day=d.getDay(); d.setDate(d.getDate()-day); d.setHours(0,0,0,0); return d; }
+function formatTpl(tpl, ctx){
+  return (tpl||'').replace(/{(\w+)}/g, (_,k)=> (ctx[k]!==undefined && ctx[k]!==null) ? String(ctx[k]) : '');
+}
+function waTextEncode(text){ return encodeURIComponent(text); }
+function waLink(phone, message){
+  const num = sanitizePhone(phone);
+  return `https://wa.me/${num}?text=${waTextEncode(message||'')}`;
+}
+function ensureUniqueLeadPhone(phone, id){
+  const digits = onlyDigits(phone);
+  return !data.leads.some(l=> onlyDigits(l.phone)===digits && l.id!==id);
+}
+
+// ===== Tabs =====
+const tabs = ['agenda','crm','dashboard','config'];
+tabs.forEach(t=> document.getElementById('tab-'+t).addEventListener('click',()=>showTab(t)));
+function showTab(name){
+  tabs.forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active', t===name);
+    document.getElementById('view-'+t).style.display = t===name ? '' : 'none';
+  });
+  if(name==='dashboard') renderDashboard();
+}
+showTab('agenda');
+
+// ===== Calendar =====
+let current = new Date(); current.setDate(1);
+function renderCalendar(){
+  const grid = document.getElementById('calendarGrid');
+  grid.innerHTML='';
+  const monthTitle = document.getElementById('monthTitle');
+  const monthName = current.toLocaleString('pt-BR',{ month:'long', year:'numeric' });
+  monthTitle.textContent = monthName.charAt(0).toUpperCase()+monthName.slice(1);
+
+  const start = startOfWeek(startOfMonth(current));
+  const end = endOfMonth(current);
+  const days = []; let d=new Date(start);
+  while(d <= end || d.getDay()!==0){ days.push(new Date(d)); d.setDate(d.getDate()+1); }
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  days.forEach(day=>{
+    const cell = document.createElement('div');
+    cell.className='day'; if(day.toDateString()===today.toDateString()) cell.classList.add('today');
+    const dateEl = document.createElement('div'); dateEl.className='date';
+    dateEl.textContent = day.getDate() + ' ' + day.toLocaleDateString('pt-BR',{ weekday:'short'});
+    cell.appendChild(dateEl);
+
+    const appts = data.appts.filter(a=>{
+      const ad=new Date(a.start);
+      return ad.getFullYear()===day.getFullYear() && ad.getMonth()===day.getMonth() && ad.getDate()===day.getDate();
+    }).sort((a,b)=> new Date(a.start)-new Date(b.start));
+
+    appts.forEach(a=>{
+      const slot = document.createElement('div'); slot.className='slot';
+      slot.textContent = fmtTime(a.start)+' '+ (a.name||'sem nome');
+      slot.title = a.topic||'';
+      slot.addEventListener('click', ()=> openApptModal(a));
+      cell.appendChild(slot);
+    });
+
+    cell.addEventListener('dblclick', ()=> openApptModal({id:null, name:'', phone:'', topic:'', payLink:'', start:new Date(day.setHours(9,0,0,0)).toISOString(), end:new Date(day.setHours(10,0,0,0)).toISOString()}));
+    grid.appendChild(cell);
+  });
+}
+document.getElementById('prevMonth').addEventListener('click',()=>{ current.setMonth(current.getMonth()-1); renderCalendar(); });
+document.getElementById('nextMonth').addEventListener('click',()=>{ current.setMonth(current.getMonth()+1); renderCalendar(); });
+document.getElementById('todayBtn').addEventListener('click',()=>{ current = new Date(); current.setDate(1); renderCalendar(); });
+document.getElementById('newApptBtn').addEventListener('click',()=> openApptModal({id:null, name:'', phone:'', topic:'', payLink:'', start:new Date().toISOString(), end:new Date(new Date().getTime()+60*60000).toISOString()}));
+
+function openApptModal(appt){
+  const body = document.getElementById('modalBody');
+  const left = document.getElementById('modalLeftActions');
+  left.innerHTML='';
+  const start = appt.start ? new Date(appt.start) : new Date();
+  const ctx = {
+    nome: appt.name||'',
+    ticket: '', data: start.toLocaleDateString('pt-BR'),
+    hora: start.toTimeString().slice(0,5),
+    tema: appt.topic||'Mentoria',
+    brand: data.prefs.brand,
+    pagamento: appt.payLink||genPaymentLink(appt.id||'')
+  };
+  body.innerHTML = `
+    <h2>${appt.id?'Editar':'Novo'} Agendamento</h2>
+    <div class="row">
+      <div style="flex:1">
+        <label>Nome do mentorado</label>
+        <input id="f_name" value="${appt.name||''}" required>
+      </div>
+      <div style="flex:1">
+        <label>WhatsApp</label>
+        <input id="f_phone" value="${appt.phone||''}" placeholder="DDD + número" required>
+      </div>
+    </div>
+    <div class="row">
+      <div style="flex:1">
+        <label>Início</label>
+        <input id="f_start" type="datetime-local" value="${toLocalInput(appt.start)}" required>
+      </div>
+      <div style="flex:1">
+        <label>Fim</label>
+        <input id="f_end" type="datetime-local" value="${toLocalInput(appt.end)}" required>
+      </div>
+    </div>
+    <div class="row">
+      <div style="flex:1">
+        <label>Tema da sessão</label>
+        <input id="f_topic" value="${appt.topic||''}">
+      </div>
+      <div style="flex:1">
+        <label>Link de pagamento</label>
+        <input id="f_pay" value="${appt.payLink||genPaymentLink(appt.id||'')}">
+      </div>
+    </div>
+    ${appt.id? `<div class="row"><button class="btn danger" id="delBtn">Excluir</button></div>`:''}
+    <div class="row">
+      <a class="btn wa" id="waConfirm" target="_blank"><strong>WA</strong> Confirmar</a>
+      <a class="btn wa" id="waRem24" target="_blank"><strong>WA</strong> Lembrete 24h</a>
+      <a class="btn wa" id="waRem2" target="_blank"><strong>WA</strong> Lembrete 2h</a>
+      <a class="btn wa" id="waPay" target="_blank"><strong>WA</strong> Enviar pagamento</a>
+    </div>
+  `;
+  // Buttons href setup
+  document.getElementById('waConfirm').href = waLink(appt.phone||'', formatTpl(data.tpls.Confirm, ctx));
+  document.getElementById('waRem24').href   = waLink(appt.phone||'', formatTpl(data.tpls.Rem24, ctx));
+  document.getElementById('waRem2').href    = waLink(appt.phone||'', formatTpl(data.tpls.Rem2, ctx));
+  document.getElementById('waPay').href     = waLink(appt.phone||'', formatTpl(data.tpls.Pay, ctx));
+
+  showModal(async (save)=>{
+    if(!save) return;
+    const obj = {
+      id: appt.id || uuid(),
+      name: document.getElementById('f_name').value.trim(),
+      phone: document.getElementById('f_phone').value.trim(),
+      topic: document.getElementById('f_topic').value.trim(),
+      payLink: document.getElementById('f_pay').value.trim(),
+      start: fromLocalInput(document.getElementById('f_start').value),
+      end: fromLocalInput(document.getElementById('f_end').value)
+    };
+    if(!obj.name || !obj.phone){ alert('Preencha nome e WhatsApp.'); return false; }
+    if(conflict(obj)){ alert('Conflito de horário detectado.'); return false; }
+    const idx = data.appts.findIndex(a=>a.id===obj.id);
+    if(idx>=0) data.appts[idx]=obj; else data.appts.push(obj);
+    store.write(data); renderCalendar(); return true;
+  });
+  if(appt.id){
+    document.getElementById('delBtn').addEventListener('click',()=>{
+      if(confirm('Excluir este agendamento?')){
+        data.appts = data.appts.filter(a=>a.id!==appt.id);
+        store.write(data); hideModal(); renderCalendar();
+      }
+    });
+  }
+}
+function conflict(appt){
+  const s=new Date(appt.start).getTime(), e=new Date(appt.end).getTime();
+  return data.appts.some(a=>{
+    if(a.id===appt.id) return false;
+    const as=new Date(a.start).getTime(), ae=new Date(a.end).getTime();
+    return (s<ae && e>as);
+  });
+}
+function genPaymentLink(ref){
+  if(!data.prefs.payBase) return '';
+  const r = (data.prefs.refPrefix||'REF-') + (ref||uuid()).slice(-6).toUpperCase();
+  try{ return new URL(data.prefs.payBase + encodeURIComponent(r)).toString(); }catch(e){ return data.prefs.payBase + encodeURIComponent(r); }
+}
+
+// ===== CRM =====
+function renderLeads(){
+  const tbody = document.querySelector('#leadsTable tbody');
+  tbody.innerHTML='';
+  data.leads.forEach(lead=>{
+    const tr=document.createElement('tr');
+    const ctx = {
+      nome: lead.name||'',
+      ticket: fmtBRL(lead.ticket||0),
+      data:'', hora:'', tema:'', brand:data.prefs.brand,
+      pagamento: lead.payment_url || genPaymentLink(lead.id||'')
+    };
+    const stageTpl = data.tpls[lead.stage] || '';
+    const waStage = waLink(lead.phone||'', formatTpl(stageTpl, ctx));
+    const waPay = waLink(lead.phone||'', formatTpl(data.tpls.Pay, ctx));
+    tr.innerHTML = `
+      <td>${lead.name||'-'}</td>
+      <td>${lead.phone||'-'}</td>
+      <td>${(lead.ticket||0).toLocaleString('pt-BR')}</td>
+      <td><span class="stage ${lead.stage}">${lead.stage}</span></td>
+      <td>${lead.payment_url? `<a href="${lead.payment_url}" target="_blank">Link</a>`:'—'}</td>
+      <td>${lead.updated? new Date(lead.updated).toLocaleString('pt-BR'):'-'}</td>
+      <td>
+        <button class="btn" data-id="${lead.id}" data-act="prev">◀</button>
+        <button class="btn" data-id="${lead.id}" data-act="next">▶</button>
+        <button class="btn" data-id="${lead.id}" data-act="edit">Editar</button>
+        <button class="btn danger" data-id="${lead.id}" data-act="del">Excluir</button>
+        <a class="btn wa" href="${waStage}" target="_blank" title="Enviar mensagem do estágio"><strong>WA</strong></a>
+        <a class="btn wa" href="${waPay}" target="_blank" title="Solicitar pagamento"><strong>WA</strong> Pay</a>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+  tbody.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const id=e.target.getAttribute('data-id');
+      const act=e.target.getAttribute('data-act');
+      const idx = data.leads.findIndex(l=>l.id===id);
+      if(idx<0) return;
+      const order=['Novo','Conversa','Proposta','Fechado'];
+      if(act==='prev'){
+        const pos = Math.max(0, order.indexOf(data.leads[idx].stage)-1);
+        data.leads[idx].stage=order[pos];
+      }else if(act==='next'){
+        const pos = Math.min(order.length-1, order.indexOf(data.leads[idx].stage)+1);
+        data.leads[idx].stage=order[pos];
+      }else if(act==='del'){
+        if(confirm('Excluir este lead?')) data.leads.splice(idx,1);
+      }else if(act==='edit'){
+        openLeadModal(data.leads[idx]); return;
+      }
+      data.leads[idx] && (data.leads[idx].updated=new Date().toISOString());
+      store.write(data); renderLeads(); renderDashboard();
+    });
+  });
+}
+document.getElementById('newLeadBtn').addEventListener('click',()=> openLeadModal({id:null,name:'',phone:'',ticket:0,stage:'Novo',notes:'', payment_url:''}));
+
+function openLeadModal(lead){
+  const body = document.getElementById('modalBody');
+  const left = document.getElementById('modalLeftActions');
+  left.innerHTML='';
+  const ctx = {
+    nome: lead.name||'', ticket: fmtBRL(lead.ticket||0),
+    data:'', hora:'', tema:'', brand:data.prefs.brand,
+    pagamento: lead.payment_url || genPaymentLink(lead.id||'')
+  };
+  body.innerHTML = `
+    <h2>${lead.id?'Editar':'Novo'} Lead</h2>
+    <div class="row">
+      <div style="flex:1">
+        <label>Nome</label>
+        <input id="l_name" value="${lead.name||''}" required>
+      </div>
+      <div style="flex:1">
+        <label>WhatsApp</label>
+        <input id="l_phone" value="${lead.phone||''}" placeholder="DDD + número" required>
+      </div>
+    </div>
+    <div class="row">
+      <div style="flex:1">
+        <label>Ticket (R$)</label>
+        <input id="l_ticket" type="number" step="0.01" value="${lead.ticket||0}" required>
+      </div>
+      <div style="flex:1">
+        <label>Estágio</label>
+        <select id="l_stage">
+          ${['Novo','Conversa','Proposta','Fechado'].map(s=>`<option ${lead.stage===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div style="flex:1">
+        <label>Link de pagamento</label>
+        <input id="l_pay" value="${lead.payment_url||genPaymentLink(lead.id||'')}">
+      </div>
+      <div style="flex:1">
+        <label>Observações</label>
+        <textarea id="l_notes" rows="3">${lead.notes||''}</textarea>
+      </div>
+    </div>
+    ${lead.id? `<div class="row"><button class="btn danger" id="delLead">Excluir</button></div>`:''}
+    <div class="row">
+      <a class="btn wa" id="waStage" target="_blank"><strong>WA</strong> Mensagem do estágio</a>
+      <a class="btn wa" id="waPay" target="_blank"><strong>WA</strong> Solicitar pagamento</a>
+    </div>
+  `;
+  // WA preview buttons
+  document.getElementById('waStage').href = waLink(lead.phone||'', formatTpl(data.tpls[lead.stage]||'', ctx));
+  document.getElementById('waPay').href   = waLink(lead.phone||'', formatTpl(data.tpls.Pay, ctx));
+
+  showModal(async (save)=>{
+    if(!save) return;
+    const obj = {
+      id: lead.id || uuid(),
+      name: document.getElementById('l_name').value.trim(),
+      phone: document.getElementById('l_phone').value.trim(),
+      ticket: parseFloat(document.getElementById('l_ticket').value||'0'),
+      stage: document.getElementById('l_stage').value,
+      payment_url: document.getElementById('l_pay').value.trim(),
+      notes: document.getElementById('l_notes').value,
+      updated: new Date().toISOString()
+    };
+    if(!obj.name || !obj.phone){ alert('Preencha nome e WhatsApp.'); return false; }
+    if(!ensureUniqueLeadPhone(obj.phone, obj.id)){ alert('Já existe um lead com este WhatsApp.'); return false; }
+    const idx = data.leads.findIndex(l=>l.id===obj.id);
+    if(idx>=0) data.leads[idx]=obj; else data.leads.push(obj);
+    store.write(data); renderLeads(); renderDashboard(); return true;
+  });
+  if(lead.id){
+    document.getElementById('delLead').addEventListener('click',()=>{
+      if(confirm('Excluir este lead?')){
+        data.leads = data.leads.filter(l=>l.id!==lead.id);
+        store.write(data); hideModal(); renderLeads(); renderDashboard();
+      }
+    });
+  }
+}
+
+// ===== Dashboard =====
+function renderDashboard(){
+  const totalLeads = data.leads.length;
+  const closed = data.leads.filter(l=>l.stage==='Fechado');
+  const conv = totalLeads ? (closed.length/totalLeads*100) : 0;
+  const revenue = closed.reduce((s,l)=> s + (l.ticket||0), 0);
+  document.getElementById('kpiConv').textContent = conv.toFixed(0)+'%';
+  document.getElementById('kpiRev').textContent = revenue.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+  // Weekly sessions (last 8 weeks)
+  const weeks = [];
+  const today = new Date();
+  for(let i=7;i>=0;i--){
+    const wStart = startOfWeek(new Date(today.getFullYear(), today.getMonth(), today.getDate()-7*i));
+    const key = wStart.toISOString().slice(0,10);
+    weeks.push({key, label: wStart.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}), count:0});
+  }
+  data.appts.forEach(a=>{
+    const d = startOfWeek(new Date(a.start)).toISOString().slice(0,10);
+    const w = weeks.find(w=>w.key===d); if(w) w.count++;
+  });
+  drawBar('chartWeekly', weeks.map(w=>w.count), weeks.map(w=>w.label), 'Sessões');
+
+  const stages=['Novo','Conversa','Proposta','Fechado'];
+  const counts=stages.map(s=> data.leads.filter(l=>l.stage===s).length);
+  drawBar('chartFunnel', counts, stages, 'Leads por estágio');
+}
+function drawBar(canvasId, values, labels, title){
+  const c = document.getElementById(canvasId);
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  const W=c.width, H=c.height, top=30, bottom=40, left=40, right=20;
+  ctx.strokeStyle = '#3a3b44'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(left, top); ctx.lineTo(left, H-bottom); ctx.lineTo(W-right, H-bottom); ctx.stroke();
+  const max = Math.max(1, Math.max(...values)); const scale = (H-top-bottom)/max;
+  const n=values.length, gap=10, bw = (W-left-right - (n+1)*gap)/n;
+  for(let i=0;i<n;i++){
+    const x = left + gap + i*(bw+gap);
+    const h = values[i]*scale;
+    const grad = ctx.createLinearGradient(0, H-bottom-h, 0, H-bottom);
+    grad.addColorStop(0, '#f1d77e');
+    grad.addColorStop(1, '#cfad3c');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, H-bottom-h, bw, h);
+    ctx.fillStyle = '#b9bcc6'; ctx.textAlign='center';
+    ctx.fillText(labels[i], x+bw/2, H-bottom+14);
+    ctx.fillStyle = '#ececec'; ctx.font='bold 12px system-ui';
+    ctx.fillText(values[i], x+bw/2, H-bottom-h-6);
+  }
+  ctx.fillStyle='#ececec'; ctx.font='bold 14px system-ui'; ctx.textAlign='left';
+  ctx.fillText(title, left, top-10);
+}
+
+// ===== Config - Preferences & Templates =====
+function loadPrefsUI(){
+  document.getElementById('prefStart').value = data.prefs.start||'09:00';
+  document.getElementById('prefEnd').value = data.prefs.end||'18:00';
+  document.getElementById('prefDDI').value = data.prefs.ddi||'55';
+  document.getElementById('prefBrand').value = data.prefs.brand||'';
+  document.getElementById('prefPayBase').value = data.prefs.payBase||'';
+  document.getElementById('prefRefPrefix').value = data.prefs.refPrefix||'';
+
+  document.getElementById('tplNovo').value = data.tpls.Novo||'';
+  document.getElementById('tplConversa').value = data.tpls.Conversa||'';
+  document.getElementById('tplProposta').value = data.tpls.Proposta||'';
+  document.getElementById('tplFechado').value = data.tpls.Fechado||'';
+  document.getElementById('tplConfirm').value = data.tpls.Confirm||'';
+  document.getElementById('tplRem24').value = data.tpls.Rem24||'';
+  document.getElementById('tplRem2').value = data.tpls.Rem2||'';
+  document.getElementById('tplPay').value = data.tpls.Pay||'';
+}
+document.getElementById('savePrefs').addEventListener('click',()=>{
+  data.prefs.start = document.getElementById('prefStart').value;
+  data.prefs.end   = document.getElementById('prefEnd').value;
+  data.prefs.ddi   = String(document.getElementById('prefDDI').value||'55').replace(/\D/g,'');
+  data.prefs.brand = document.getElementById('prefBrand').value.trim();
+  data.prefs.payBase = document.getElementById('prefPayBase').value.trim();
+  data.prefs.refPrefix = document.getElementById('prefRefPrefix').value.trim();
+  store.write(data); alert('Preferências salvas.');
+});
+document.getElementById('saveTpls').addEventListener('click',()=>{
+  data.tpls.Novo     = document.getElementById('tplNovo').value;
+  data.tpls.Conversa = document.getElementById('tplConversa').value;
+  data.tpls.Proposta = document.getElementById('tplProposta').value;
+  data.tpls.Fechado  = document.getElementById('tplFechado').value;
+  data.tpls.Confirm  = document.getElementById('tplConfirm').value;
+  data.tpls.Rem24    = document.getElementById('tplRem24').value;
+  data.tpls.Rem2     = document.getElementById('tplRem2').value;
+  data.tpls.Pay      = document.getElementById('tplPay').value;
+  store.write(data); alert('Templates salvos.');
+});
+
+// ===== Import/Export & CSV =====
+function downloadText(filename, text){
+  const blob = new Blob([text], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download=filename; a.click(); URL.revokeObjectURL(url);
+}
+document.getElementById('exportBtn').addEventListener('click',()=>{
+  downloadText('mentoria_pro_backup.json', JSON.stringify(data,null,2));
+});
+document.getElementById('backupJSON').addEventListener('click',()=>{
+  downloadText('mentoria_pro_backup.json', JSON.stringify(data,null,2));
+});
+document.getElementById('importBtn').addEventListener('click',()=>{
+  const f = document.getElementById('importFile').files[0];
+  if(!f){ alert('Selecione um arquivo JSON primeiro.'); return; }
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const obj = JSON.parse(reader.result);
+      if(!obj.appts || !obj.leads || !obj.prefs || !obj.tpls) throw new Error('Formato inválido');
+      data = obj; store.write(data);
+      renderCalendar(); renderLeads(); renderDashboard(); loadPrefsUI();
+      alert('Importado com sucesso.');
+    }catch(e){ alert('Arquivo inválido.'); }
+  };
+  reader.readAsText(f);
+});
+document.getElementById('exportCSVLeads').addEventListener('click',()=>{
+  const headers = ['id','nome','whatsapp','ticket','estagio','payment_url','updated','notes'];
+  const rows = data.leads.map(l=>[l.id,l.name,l.phone,(l.ticket||0),l.stage,(l.payment_url||''),(l.updated||''),(l.notes||'')]);
+  const csv = [headers.join(','), ...rows.map(r=> r.map(v=> `"${String(v).replace(/"/g,'""')}"`).join(','))].join('\n');
+  downloadText('leads.csv', csv);
+});
+document.getElementById('exportCSVAppts').addEventListener('click',()=>{
+  const headers = ['id','nome','whatsapp','tema','inicio','fim','payment_link'];
+  const rows = data.appts.map(a=>[a.id,a.name,a.phone,(a.topic||''),(a.start),(a.end),(a.payLink||'')]);
+  const csv = [headers.join(','), ...rows.map(r=> r.map(v=> `"${String(v).replace(/"/g,'""')}"`).join(','))].join('\n');
+  downloadText('agendamentos.csv', csv);
+});
+
+// ===== Modal mechanics =====
+function showModal(onClose){
+  const modal = document.getElementById('modal');
+  modal.style.display='flex';
+  const close = document.getElementById('closeModal');
+  const save = document.getElementById('saveModal');
+  function cleanup(){ modal.style.display='none'; close.removeEventListener('click', onCloseWrapFalse); save.removeEventListener('click', onCloseWrapTrue); }
+  async function onCloseWrapTrue(){ const res = await onClose(true); if(res!==false) cleanup(); }
+  function onCloseWrapFalse(){ onClose(false); cleanup(); }
+  close.addEventListener('click', onCloseWrapFalse);
+  save.addEventListener('click', onCloseWrapTrue);
+}
+function hideModal(){ document.getElementById('modal').style.display='none'; }
+
+// ===== Init: seed demo, render, load prefs UI =====
+function seedIfEmpty(){
+  if(data.appts.length===0 && data.leads.length===0){
+    const now=new Date();
+    const ap = (d,h)=>({id:uuid(),name:'Cliente '+d,phone:'51999998888',topic:'Mentoria '+d,payLink:genPaymentLink(String(d)),start:new Date(now.getFullYear(),now.getMonth(),d,h,0,0).toISOString(),end:new Date(now.getFullYear(),now.getMonth(),d,h+1,0,0).toISOString()});
+    data.appts.push(ap(3,9), ap(5,11), ap(12,15), ap(15,10));
+    const ld = (n,s,t)=>({id:uuid(),name:n,phone:'51999998888',ticket:t,stage:s,payment_url:genPaymentLink(n),notes:'',updated:new Date().toISOString()});
+    data.leads.push(ld('Ana','Novo',1500), ld('Bruno','Conversa',2000), ld('Carlos','Proposta',2500), ld('Daniela','Fechado',3000));
+    store.write(data);
+  }
+}
+seedIfEmpty();
+renderCalendar();
+renderLeads();
+renderDashboard();
+loadPrefsUI();
+</script>
+</body>
+</html>
